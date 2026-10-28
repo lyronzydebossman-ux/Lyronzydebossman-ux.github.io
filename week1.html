@@ -1,0 +1,525 @@
+<header><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERRA — Field Notes on the Earth's Surface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c231c;
+    --forest:#2c3b2e;
+    --contour:#4a6741;
+    --tan:#c9b896;
+    --cream:#f1ecdd;
+    --river:#4a7c8c;
+    --gold:#c89b3c;
+    --paper:#e9e2ce;
+    --line:rgba(28,35,28,0.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--gold);color:var(--ink);}
+
+  .mono{
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing:0.03em;
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:22px 48px;
+    background:linear-gradient(to bottom, rgba(241,236,221,0.95), rgba(241,236,221,0));
+    pointer-events:none;
+  }
+  nav *{pointer-events:auto;}
+  .logo{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.02em;
+  }
+  .logo span{color:var(--river);}
+  .navlinks{display:flex; gap:32px; font-size:13px;}
+  .navlinks a{
+    color:var(--ink); text-decoration:none;
+    font-family:'JetBrains Mono', monospace;
+    text-transform:uppercase; letter-spacing:0.08em;
+    border-bottom:1px solid transparent;
+    padding-bottom:3px;
+    transition:border-color 0.25s;
+  }
+  .navlinks a:hover{border-color:var(--gold);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 48px;
+    background:
+      radial-gradient(circle at 18% 28%, rgba(74,124,140,0.10), transparent 40%),
+      var(--cream);
+    overflow:hidden;
+    cursor:crosshair;
+  }
+  .contours{
+    position:absolute; inset:0; z-index:0;
+    opacity:0.55;
+    pointer-events:none;
+  }
+  .contours svg{width:100%; height:100%;}
+  .contour-path{
+    fill:none;
+    stroke:var(--contour);
+    stroke-width:1;
+    opacity:0;
+    stroke-dasharray:2000;
+    stroke-dashoffset:2000;
+    animation:draw 3.5s ease forwards;
+  }
+  @keyframes draw{
+    to{opacity:0.5; stroke-dashoffset:0;}
+  }
+
+  .eyebrow{
+    position:relative; z-index:2;
+    font-size:13px;
+    text-transform:uppercase;
+    color:var(--river);
+    margin-bottom:22px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:8px; height:8px;
+    background:var(--gold);
+    border-radius:50%;
+    display:inline-block;
+    box-shadow:0 0 0 4px rgba(200,155,60,0.18);
+  }
+
+  h1.headline{
+    position:relative; z-index:2;
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(48px, 8vw, 108px);
+    line-height:0.98;
+    letter-spacing:-0.02em;
+    max-width:14ch;
+  }
+  h1.headline em{
+    font-style:italic;
+    font-weight:400;
+    color:var(--forest);
+  }
+
+  .hero-sub{
+    position:relative; z-index:2;
+    max-width:520px;
+    margin-top:28px;
+    font-size:17px;
+    line-height:1.6;
+    color:#3a4238;
+  }
+
+  .coord-readout{
+    position:absolute; z-index:3;
+    bottom:40px; left:48px;
+    font-size:12px;
+    color:var(--forest);
+    background:rgba(241,236,221,0.85);
+    padding:8px 12px;
+    border:1px solid var(--line);
+    display:flex; gap:18px;
+    backdrop-filter:blur(4px);
+  }
+  .coord-readout div span{display:block; color:var(--river); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px;}
+
+  .scroll-hint{
+    position:absolute; z-index:3; bottom:44px; right:48px;
+    font-size:11px; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--forest); display:flex; align-items:center; gap:10px;
+  }
+  .scroll-hint .bar{width:1px; height:34px; background:var(--forest); position:relative; overflow:hidden;}
+  .scroll-hint .bar::after{
+    content:''; position:absolute; top:-100%; left:0; width:100%; height:100%;
+    background:var(--gold);
+    animation:slide 1.8s ease-in-out infinite;
+  }
+  @keyframes slide{ 50%{top:100%;} 100%{top:100%;} }
+
+  /* ---------- SECTION SHELL ---------- */
+  section{
+    padding:120px 48px;
+    position:relative;
+  }
+  .section-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    margin-bottom:56px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:24px;
+    flex-wrap:wrap; gap:16px;
+  }
+  .section-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px, 4vw, 44px);
+  }
+  .section-tag{
+    font-size:12px;
+    color:var(--river);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+
+  /* ---------- REGIONS GRID (image cards as map sheets) ---------- */
+  .regions{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:2px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .region-card{
+    background:var(--cream);
+    position:relative;
+    overflow:hidden;
+    aspect-ratio:4/5;
+    cursor:pointer;
+  }
+  .region-card img{
+    width:100%; height:100%; object-fit:cover;
+    filter:saturate(0.85) contrast(1.05);
+    transition:transform 0.7s cubic-bezier(.2,.8,.2,1), filter 0.5s;
+  }
+  .region-card:hover img{transform:scale(1.08); filter:saturate(1.05) contrast(1.1);}
+  .region-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(28,35,28,0.85) 0%, rgba(28,35,28,0.05) 45%);
+    display:flex; flex-direction:column; justify-content:flex-end;
+    padding:22px;
+    color:var(--cream);
+  }
+  .region-coord{
+    font-size:11px; color:var(--tan); margin-bottom:6px;
+  }
+  .region-name{
+    font-family:'Fraunces', serif; font-size:24px; font-weight:600;
+  }
+  .region-desc{
+    font-size:13px; color:var(--paper); margin-top:6px; max-width:32ch; line-height:1.5;
+    opacity:0.9;
+  }
+
+  /* ---------- FIELD NOTES ---------- */
+  .notes{
+    background:var(--forest);
+    color:var(--cream);
+  }
+  .notes .section-tag{color:var(--tan);}
+  .notes-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:40px;
+  }
+  .note{
+    border-top:2px solid var(--gold);
+    padding-top:18px;
+  }
+  .note .num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--tan);
+    margin-bottom:14px;
+    display:block;
+  }
+  .note h3{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:22px;
+    margin-bottom:12px;
+  }
+  .note p{
+    font-size:14.5px;
+    line-height:1.7;
+    color:#cdd6c9;
+  }
+
+  /* ---------- STRATA (stats as elevation bands) ---------- */
+  .strata{
+    display:flex; flex-direction:column; border:1px solid var(--line);
+  }
+  .stratum{
+    display:grid; grid-template-columns:120px 1fr 240px;
+    align-items:center;
+    padding:26px 28px;
+    border-bottom:1px solid var(--line);
+    gap:24px;
+  }
+  .stratum:last-child{border-bottom:none;}
+  .stratum .band{
+    height:34px; border-radius:2px;
+  }
+  .stratum .value{
+    font-family:'Fraunces', serif; font-size:34px; font-weight:600;
+  }
+  .stratum .label{font-size:13.5px; color:#3a4238; line-height:1.5;}
+
+  /* ---------- FOOTER / LEGEND ---------- */
+  footer{
+    background:var(--ink);
+    color:var(--paper);
+    padding:70px 48px 34px;
+  }
+  .legend{
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:40px;
+    padding-bottom:40px; border-bottom:1px solid rgba(241,236,221,0.15);
+    margin-bottom:26px;
+  }
+  .legend h3{
+    font-family:'Fraunces', serif; font-size:26px; margin-bottom:14px; color:var(--cream);
+  }
+  .legend p{font-size:14px; color:#a9b2a5; max-width:38ch; line-height:1.6;}
+  .legend-keys{display:flex; gap:28px; flex-wrap:wrap;}
+  .legend-key{display:flex; align-items:center; gap:8px; font-size:12px; color:#c9d0c5;}
+  .legend-key .dot{width:10px; height:10px; border-radius:50%;}
+  .foot-bottom{
+    display:flex; justify-content:space-between; font-size:11.5px; color:#7d8578;
+    text-transform:uppercase; letter-spacing:0.06em; flex-wrap:wrap; gap:10px;
+  }
+
+  @media (max-width:900px){
+    .regions{grid-template-columns:1fr;}
+    .notes-grid{grid-template-columns:1fr; gap:32px;}
+    .stratum{grid-template-columns:1fr; gap:10px;}
+    nav{padding:18px 22px;}
+    .navlinks{display:none;}
+    section{padding:80px 22px;}
+    .hero{padding:0 22px;}
+    .coord-readout{left:22px; flex-direction:column; gap:6px;}
+    .scroll-hint{display:none;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .contour-path{animation:none; opacity:0.5; stroke-dashoffset:0;}
+    .scroll-hint .bar::after{animation:none;}
+  }
+
+  a:focus-visible, button:focus-visible{outline:2px solid var(--gold); outline-offset:3px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">TERRA<span>.</span></div>
+  <div class="navlinks">
+    <a href="#regions">Regions</a>
+    <a href="#notes">Field Notes</a>
+    <a href="#strata">Strata</a>
+  </div>
+</nav>
+
+<section class="hero" id="hero">
+  <div class="contours" aria-hidden="true">
+    <svg viewBox="0 0 1200 800" preserveAspectRatio="none">
+      <path class="contour-path" style="animation-delay:0s"   d="M-50,120 C 150,60 300,180 500,120 S 800,40 1000,110 S 1250,150 1300,100" />
+      <path class="contour-path" style="animation-delay:0.15s" d="M-50,220 C 180,150 320,260 520,210 S 780,140 1000,200 S 1250,240 1300,190" />
+      <path class="contour-path" style="animation-delay:0.3s"  d="M-50,320 C 160,270 340,360 540,300 S 760,240 1010,290 S 1250,330 1300,280" />
+      <path class="contour-path" style="animation-delay:0.45s" d="M-50,420 C 190,380 330,450 530,400 S 790,340 1020,390 S 1250,420 1300,370" />
+      <path class="contour-path" style="animation-delay:0.6s"  d="M-50,520 C 170,480 350,540 540,500 S 770,450 1000,490 S 1250,520 1300,470" />
+      <path class="contour-path" style="animation-delay:0.75s" d="M-50,610 C 180,580 330,630 530,600 S 780,560 1010,590 S 1250,610 1300,570" />
+      <path class="contour-path" style="animation-delay:0.9s"  d="M-50,700 C 160,670 340,710 540,690 S 790,650 1010,680 S 1250,700 1300,660" />
+    </svg>
+  </div>
+
+  <div class="eyebrow mono">05.6037° N, 00.1870° W — SITE ORIGIN: ACCRA, GHANA</div>
+  <h1 class="headline">Reading the <em>land</em><br>before it reads you.</h1>
+  <p class="hero-sub">TERRA is a field journal of terrain, water, and settlement across West Africa — built from satellite passes, elevation surveys, and time spent on the actual ground.</p>
+
+  <div class="coord-readout mono" id="coordReadout">
+    <div><span>Lat</span>5.6037° N</div>
+    <div><span>Lng</span>0.1870° W</div>
+    <div><span>Elev</span>61 m</div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Descend</span>
+    <div class="bar"></div>
+  </div>
+</section>
+
+<section id="regions">
+  <div class="section-head">
+    <h2>Surveyed regions</h2>
+    <div class="section-tag mono">04 SITES CATALOGUED</div>
+  </div>
+  <div class="regions">
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/ghana,accra,city/all" alt="Aerial view of Accra coastline and urban grid">
+      <div class="region-overlay">
+        <div class="region-coord mono">5.60° N, 0.18° W</div>
+        <div class="region-name">Accra Coastline</div>
+        <div class="region-desc">Rapid coastal urbanization pressing against the Gulf of Guinea.</div>
+      </div>
+    </div>
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/lake,volta,ghana/all" alt="Volta Lake shoreline and vegetation">
+      <div class="region-overlay">
+        <div class="region-coord mono">7.30° N, 0.05° E</div>
+        <div class="region-name">Volta Basin</div>
+        <div class="region-desc">One of the largest man-made lakes, tracked here for turbidity and algal bloom.</div>
+      </div>
+    </div>
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/savanna,africa,plain/all" alt="Savanna plains stretching to the horizon">
+      <div class="region-overlay">
+        <div class="region-coord mono">9.40° N, 0.85° W</div>
+        <div class="region-name">Northern Savanna</div>
+        <div class="region-desc">Guinea savanna belt, monitored for seasonal vegetation index shifts.</div>
+      </div>
+    </div>
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/mining,quarry,earth/all" alt="Open mining pit exposing bare earth">
+      <div class="region-overlay">
+        <div class="region-coord mono">5.30° N, 1.99° W</div>
+        <div class="region-name">Tarkwa Mining Belt</div>
+        <div class="region-desc">Land degradation tracked across two decades of extraction.</div>
+      </div>
+    </div>
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/rainforest,canopy,green/all" alt="Dense green rainforest canopy">
+      <div class="region-overlay">
+        <div class="region-coord mono">6.20° N, 2.10° W</div>
+        <div class="region-name">Western Forest Reserve</div>
+        <div class="region-desc">Closed-canopy forest, a buffer against encroaching farmland.</div>
+      </div>
+    </div>
+
+    <div class="region-card">
+      <img src="https://loremflickr.com/700/900/river,delta,aerial/all" alt="River delta branching toward the sea">
+      <div class="region-overlay">
+        <div class="region-coord mono">5.78° N, 0.95° E</div>
+        <div class="region-name">Volta River Delta</div>
+        <div class="region-desc">Sediment transport and shoreline retreat, surveyed twice yearly.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="notes" id="notes">
+  <div class="section-head">
+    <h2>Field notes</h2>
+    <div class="section-tag mono">METHOD LOG</div>
+  </div>
+  <div class="notes-grid">
+    <div class="note">
+      <span class="num mono">// 01</span>
+      <h3>Remote before real</h3>
+      <p>Every site starts as a Sentinel-2 composite — NDVI, NDWI, and bare soil index layered before a single boot touches ground. Patterns found here decide where fieldwork actually goes.</p>
+    </div>
+    <div class="note">
+      <span class="num mono">// 02</span>
+      <h3>Ground-truth or it didn't happen</h3>
+      <p>Satellite signal gets checked against household surveys, GPS transects, and photographs at fixed bearings. Anything the imagery implies has to survive contact with the actual place.</p>
+    </div>
+    <div class="note">
+      <span class="num mono">// 03</span>
+      <h3>Change is the only constant</h3>
+      <p>Single dates tell you almost nothing. Every catalogued site here is read as a time-series — 2000 to present — because land only means something in motion.</p>
+    </div>
+  </div>
+</section>
+
+<section id="strata">
+  <div class="section-head">
+    <h2>Land in numbers</h2>
+    <div class="section-tag mono">DERIVED FROM 24YR TIME-SERIES</div>
+  </div>
+  <div class="strata">
+    <div class="stratum">
+      <div class="value">238,540</div>
+      <div class="band" style="background:var(--river);"></div>
+      <div class="label">km² of Ghana's land area classified across active survey layers</div>
+    </div>
+    <div class="stratum">
+      <div class="value">18.4%</div>
+      <div class="band" style="background:var(--gold);"></div>
+      <div class="label">forest cover lost across the western mining belt, 2000–2024</div>
+    </div>
+    <div class="stratum">
+      <div class="value">3,283</div>
+      <div class="band" style="background:var(--contour);"></div>
+      <div class="label">km² of Volta Lake surface area tracked for water quality</div>
+    </div>
+    <div class="stratum">
+      <div class="value">6.2×</div>
+      <div class="band" style="background:var(--tan);"></div>
+      <div class="label">growth in built-up area around Kasoa since the year 2000</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="legend">
+    <div>
+      <h3>TERRA</h3>
+      <p>A working field journal built on GIS, remote sensing, and time spent where the data comes from. Not a museum piece — a live survey.</p>
+    </div>
+    <div class="legend-keys">
+      <div class="legend-key"><span class="dot" style="background:var(--river);"></span>Water bodies</div>
+      <div class="legend-key"><span class="dot" style="background:var(--contour);"></span>Vegetation</div>
+      <div class="legend-key"><span class="dot" style="background:var(--tan);"></span>Built-up land</div>
+      <div class="legend-key"><span class="dot" style="background:var(--gold);"></span>Degraded land</div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>Projection: WGS 84</span>
+    <span>Scale 1 : dynamic</span>
+    <span>© Field Survey Archive</span>
+  </div>
+</footer>
+
+<script>
+  // Live coordinate readout that tracks the cursor across the hero, like a GIS crosshair
+  const hero = document.getElementById('hero');
+  const readout = document.getElementById('coordReadout');
+  const baseLat = 5.6037, baseLng = -0.1870;
+
+  hero.addEventListener('mousemove', (e) => {
+    const rect = hero.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const lat = (baseLat + (0.5 - y) * 8).toFixed(4);
+    const lng = (baseLng + (x - 0.5) * 8).toFixed(4);
+    const elev = Math.round(20 + (1 - y) * 380);
+    readout.innerHTML =
+      '<div><span>Lat</span>' + Math.abs(lat) + '° N</div>' +
+      '<div><span>Lng</span>' + Math.abs(lng) + '° W</div>' +
+      '<div><span>Elev</span>' + elev + ' m</div>';
+  });
+</script>
+
+</body>
+</html>
+ WEBGIS SITE 
+</header>
+<picture>
+    
+</picture>
