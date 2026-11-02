@@ -1,0 +1,647 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GEOINFO TECH</title>
+ 
+<!-- Linked stylesheet: Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+ 
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+ 
+<!-- Embedded stylesheet -->
+<style>
+  :root {
+    --primary: #1515eb;      /* deep survey-blue */
+    --primary-dark: #e0941a;
+    --accent: #c98a2c;       /* ochre / contour accent */
+    --canopy: #2f6b3f;       /* boundary green */
+    --border: #20c8d4;
+    --text: #1b2420;
+    --panel: #ffffff;
+    --page: #25bdef;
+  }
+ 
+  * { box-sizing: border-box; }
+ 
+  body {
+    margin: 0;
+    font-family: 'Inter', "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background: var(--page);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+ 
+  /* ---------- HEADER ---------- */
+  header {
+    background: var(--primary);
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(11, 192, 198, 0.05) 0px,
+      rgba(255,255,255,0.05) 1px,
+      transparent 1px,
+      transparent 24px
+    );
+    color: #eaf4fb;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 3px solid var(--accent);
+  }
+ 
+  header h1 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+  }
+ 
+  header h1 span {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+ 
+  /* ---------- NAVIGATION ---------- */
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+  }
+ 
+  nav a {
+    color: #74b5e3;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+ 
+  nav a:hover,
+  nav a:focus-visible { background: rgba(255,255,255,0.15); color: var(--accent); }
+ 
+  #themeToggle {
+    background: transparent;
+    color: #eaf4fb;
+    border: 1.5px solid var(--accent);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  #themeToggle:hover,
+  #themeToggle:focus-visible { background: var(--accent); color: var(--primary-dark); }
+ 
+  /* ---------- LAYOUT ---------- */
+  main {
+    display: flex;
+    min-height: calc(100vh - 130px);
+  }
+ 
+  aside {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--panel);
+    padding: 18px;
+  }
+ 
+  #layers { border-right: 1px solid var(--border); }
+  #about  { border-left: 1px solid var(--border); }
+ 
+  aside h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 6px;
+    margin: 0 0 10px;
+  }
+ 
+  aside h2:not(:first-child) { margin-top: 22px; }
+ 
+  aside p.tab-note {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #4a534d;
+    margin: 0 0 14px;
+  }
+ 
+  .dark-theme aside p.tab-note { color: #cfcfcf; }
+ 
+  .layer-item { font-size: 0.9rem; padding: 5px 0; display: flex; align-items: center; gap: 6px; }
+  .layer-item input { accent-color: var(--primary); }
+  .layer-item label { cursor: pointer; }
+ 
+  .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .swatch.markers { background: var(--primary); }
+  .swatch.boundary { background: var(--canopy); }
+ 
+  /* ---------- MAP COLUMN (centered) ---------- */
+  #map-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 24px;
+    min-width: 0;
+  }
+ 
+  #map-column h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 6px;
+    margin: 0 0 10px;
+    align-self: center;
+  }
+ 
+  #map-column p.tab-note {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #4a534d;
+    text-align: center;
+    max-width: 60ch;
+    margin: 0 0 16px;
+  }
+ 
+  .dark-theme #map-column p.tab-note { color: #cfcfcf; }
+ 
+  /* ---------- MAP VIEWPORT ---------- */
+  #map {
+    width: 100%;
+    max-width: 900px;
+    height: 560px;       /* explicit height so the map canvas renders */
+    min-height: 400px;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+ 
+  .dark-theme #map { border-color: #444; }
+ 
+  .leaflet-popup-content-wrapper {
+    font-family: 'Inter', sans-serif;
+    border-radius: 6px;
+  }
+  .leaflet-popup-content strong { color: var(--primary-dark); }
+ 
+  /* ---------- HOSTEL INFO SECTION ---------- */
+  #hostel-info {
+    background: var(--panel);
+    padding: 32px 24px 40px;
+    border-top: 3px solid var(--accent);
+  }
+ 
+  .info-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+ 
+  #hostel-info h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.35rem;
+    color: var(--primary);
+    margin: 0 0 6px;
+  }
+ 
+  #hostel-info h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+  }
+ 
+  #hostel-info > .info-inner > p.lead {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #4a534d;
+    max-width: 80ch;
+    margin: 0 0 26px;
+  }
+ 
+  .dark-theme #hostel-info > .info-inner > p.lead { color: #cfcfcf; }
+  .dark-theme #hostel-info { background-color: #1f1f1f; }
+  .dark-theme #hostel-info h2 { color: var(--accent); }
+ 
+  /* Public vs Private comparison cards */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 18px 0 34px;
+  }
+ 
+  .compare-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+  }
+ 
+  .dark-theme .compare-card { background: #262626; border-color: #444; }
+ 
+  .compare-card img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    display: block;
+  }
+ 
+  .compare-card .compare-body { padding: 16px; }
+ 
+  .compare-card.public h3 { color: var(--canopy); border-bottom: 2px solid var(--canopy); padding-bottom: 6px; }
+  .compare-card.private h3 { color: var(--primary-dark); border-bottom: 2px solid var(--primary-dark); padding-bottom: 6px; }
+ 
+  .compare-card p {
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: #4a534d;
+    margin: 0 0 10px;
+  }
+  .dark-theme .compare-card p { color: #cfcfcf; }
+ 
+  .compare-card ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.83rem;
+    line-height: 1.6;
+    color: #4a534d;
+  }
+  .dark-theme .compare-card ul { color: #cfcfcf; }
+ 
+  /* Importance callout cards */
+  .importance-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 18px 0 34px;
+  }
+ 
+  .importance-card {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 16px;
+    background: var(--panel);
+  }
+ 
+  .dark-theme .importance-card { background: #262626; border-color: #444; border-left-color: var(--accent); }
+ 
+  .importance-card h4 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--primary-dark);
+    margin: 0 0 6px;
+  }
+  .dark-theme .importance-card h4 { color: var(--accent); }
+ 
+  .importance-card p {
+    font-size: 0.83rem;
+    line-height: 1.5;
+    color: #4a534d;
+    margin: 0;
+  }
+  .dark-theme .importance-card p { color: #cfcfcf; }
+ 
+  /* Gallery */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+ 
+  .gallery figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+ 
+  .dark-theme .gallery figure { background: #262626; border-color: #444; }
+ 
+  .gallery img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+  }
+ 
+  .gallery figcaption {
+    font-size: 0.72rem;
+    line-height: 1.4;
+    padding: 8px 10px;
+    color: #4a534d;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .dark-theme .gallery figcaption { color: #cfcfcf; }
+ 
+  @media (max-width: 900px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .importance-grid { grid-template-columns: 1fr; }
+    .gallery { grid-template-columns: repeat(2, 1fr); }
+  }
+ 
+  /* ---------- FOOTER ---------- */
+  footer {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    padding: 12px;
+    background: var(--primary-dark);
+    color: #eaf4fb;
+  }
+ 
+  /* ---------- DARK THEME ---------- */
+  .dark-theme {
+    background-color: #2b2b2b;
+    color: #ffffff;
+  }
+  .dark-theme aside {
+    background-color: #1f1f1f;
+    color: #ffffff;
+  }
+  .dark-theme #layers { border-right: 1px solid #444; }
+  .dark-theme #about  { border-left: 1px solid #444; }
+  .dark-theme aside h2,
+  .dark-theme #map-column h2 {
+    color: var(--accent);
+    border-bottom-color: #555;
+  }
+  .dark-theme header,
+  .dark-theme footer {
+    background-color: #111111;
+    color: #ffffff;
+  }
+  .dark-theme header h1 span { color: var(--accent); }
+  .dark-theme nav a { color: #ffffff; }
+  .dark-theme .layer-item label { color: #ffffff; }
+ 
+  @media (max-width: 900px) {
+    main { flex-direction: column; }
+    aside { width: 100%; border: none !important; border-bottom: 1px solid var(--border) !important; }
+    #map-column { padding: 18px; }
+    #map { height: 400px; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+ 
+<!-- HEADER -->
+<header>
+  <h1>HOSTELS AND HALLS IN UNIVERSITY OF GHANA<span>GEOINFO TECH &middot; WEB GIS LAB</span></h1>
+  <nav>
+    <ul>
+      <li><a href="#map-column">Map</a></li>
+      <li><a href="#layers">Layers</a></li>
+      <li><a href="#hostel-info">Hostels Info</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+  <button id="themeToggle">Dark mode</button>
+</header>
+ 
+<!-- MAIN CONTENT -->
+<main>
+  <aside id="layers">
+    <h2>Layers</h2>
+    <p class="tab-note">Turn map layers on or off, and switch the basemap between a standard street view and satellite imagery.</p>
+    <div class="layer-item">
+      <input type="checkbox" id="layer-markers" checked>
+      <label for="layer-markers"><span class="swatch markers"></span>Halls &amp; Hostels</label>
+    </div>
+    <div class="layer-item">
+      <input type="checkbox" id="layer-region" checked>
+      <label for="layer-region"><span class="swatch boundary"></span>Campus Boundary</label>
+    </div>
+ 
+    <h2>Basemap</h2>
+    <div class="layer-item">
+      <input type="radio" name="basemap" id="osm" checked>
+      <label for="osm">OpenStreetMap</label>
+    </div>
+    <div class="layer-item">
+      <input type="radio" name="basemap" id="sat">
+      <label for="sat">Satellite (Esri)</label>
+    </div>
+  </aside>
+ 
+  <!-- MAP VIEWPORT (centered) -->
+  <section id="map-column">
+    <h2>Map</h2>
+    <p class="tab-note">An interactive map of University of Ghana, Legon showing every traditional hall and hostel. Click a marker for its name and hall type, or toggle the campus boundary and basemap from the Layers panel.</p>
+    <div id="map"></div>
+  </section>
+ 
+  <aside id="about">
+    <h2>About</h2>
+    <p class="tab-note">This page is a Web GIS lab exercise built with plain HTML, CSS, and Leaflet.js. It maps the residential halls and hostels of the University of Ghana, Legon campus for quick reference by new and returning students.</p>
+    <h2>Contact</h2>
+    <p class="tab-note">Built by Bossman Kwesi Nouvlo(11149375) &middot; Geography and Resource Development, University of Ghana.</p>
+  </aside>
+</main>
+ 
+<!-- HOSTEL INFORMATION SECTION -->
+<section id="hostel-info">
+  <div class="info-inner">
+    <h2>Understanding Halls &amp; Hostels</h2>
+    <p class="lead">Beyond the map, residential accommodation is one of the most important parts of student life at the University of Ghana. Below is a short overview of why hostel accommodation matters, and how the university's own halls differ from privately run hostels around campus.</p>
+ 
+    <h3 style="font-size:1rem; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:6px; display:inline-block;">Why Hostel Accommodation Matters</h3>
+    <div class="importance-grid">
+      <div class="importance-card">
+        <h4>Access to Education</h4>
+        <p>On-campus housing lets students from outside Accra live close to lecture halls and the library, cutting out long, costly commutes that can hurt attendance and study time.</p>
+      </div>
+      <div class="importance-card">
+        <h4>Safety &amp; Security</h4>
+        <p>Halls and registered hostels offer supervised, gated environments with porters and access control, which is safer than ad-hoc private rentals scattered off-campus.</p>
+      </div>
+      <div class="importance-card">
+        <h4>Community &amp; Identity</h4>
+        <p>Traditional halls in particular build strong student identity through hall week celebrations, sports competitions, and mentorship between senior and junior members.</p>
+      </div>
+      <div class="importance-card">
+        <h4>Structured Living</h4>
+        <p>Shared facilities, common rooms, and hall governance (Junior Common Room executives) teach students independence, budgeting, and self-organization.</p>
+      </div>
+      <div class="importance-card">
+        <h4>Support Networks</h4>
+        <p>Living among peers facing the same academic pressures makes it easier to form study groups and get emotional and social support during the semester.</p>
+      </div>
+      <div class="importance-card">
+        <h4>Affordability</h4>
+        <p>University-run halls are typically cheaper than private off-campus alternatives, which matters for students managing tight budgets.</p>
+      </div>
+    </div>
+ 
+    <h3 style="font-size:1rem; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:6px; display:inline-block;">Public (University) Halls vs. Private Hostels</h3>
+    <div class="compare-grid">
+      <div class="compare-card public">
+        <img src="https://images.unsplash.com/photo-1762340034235-881592eaa7a3?fm=jpg&q=60&w=1200&auto=format&fit=crop" alt="University of Ghana campus buildings, representative of the traditional and UGEL halls">
+        <div class="compare-body">
+          <h3>Public / University Halls</h3>
+          <p>These are owned and administered directly by the University of Ghana. They include the five traditional halls (Legon, Akuafo, Commonwealth, Volta, Mensah Sarbah) and the newer UGEL halls (Hilla Limann, Alex Kwapong, Elizabeth Sey, Jean Nelson, Jubilee).</p>
+          <ul>
+            <li>Fees are set and regulated by the University</li>
+            <li>Allocated through the official University accommodation system</li>
+            <li>Governed by Hall Councils and Junior Common Room executives</li>
+            <li>Strong traditions, rivalries, and alumni networks</li>
+            <li>Located within the main campus boundary</li>
+          </ul>
+        </div>
+      </div>
+      <div class="compare-card private">
+        <img src="https://getrooms.co/wp-content/uploads/2022/10/pent3-scaled-1-1024x768.jpg" alt="A generic private hostel apartment-style building near a university campus">
+        <div class="compare-body">
+          <h3>Private Hostels</h3>
+          <p>Independently owned and run by private companies or individuals, private hostels (such as TF Hostel, Bani Hostel, and Pentagon Hostel) operate around the fringes of campus to absorb the overflow of students who cannot secure a room in the official halls.</p>
+          <ul>
+            <li>Fees set independently by the operator, often higher</li>
+            <li>Booked directly with the hostel, not through the University</li>
+            <li>Amenities and room quality vary widely by operator</li>
+            <li>Not always within walking distance of lecture halls</li>
+            <li>University advises students to avoid unverified agents</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+ 
+    <h3 style="font-size:1rem; color:var(--primary); border-bottom:2px solid var(--accent); padding-bottom:6px; display:inline-block;">Gallery Reference</h3>
+    <div class="gallery">
+      <figure>
+        <img src="https://images.unsplash.com/photo-1762340034235-881592eaa7a3?fm=jpg&q=60&w=800&auto=format&fit=crop" alt="University of Ghana campus, Balme Library clock tower">
+        <figcaption>University of Ghana campus landmark, near the traditional halls.</figcaption>
+      </figure>
+      <figure>
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgD0EYzDSJS1vxxOf6_YhnTECkiOs7Yvu2NEMvTJEkUTdwmFamQlIUokYfaw8p_0kz1ROez-aYY3stMhaDJ9mzNj311JyBC-vNoRdOXPupMtVicb_-S8u3EoYj-yHbscFii63-OtD9Ssl0/s1600/GHL-Legon-37-954x440.jpg" alt="Bunk beds in a shared hostel room">
+        <figcaption>Typical shared bunk-bed room found in many student hostels.</figcaption>
+      </figure>
+      <figure>
+        <img src="https://images.unsplash.com/photo-1531576788337-610fa9c67107?fm=jpg&q=60&w=800&auto=format&fit=crop" alt="Beds in a student dormitory room">
+        <figcaption>Dormitory-style room layout common to traditional halls.</figcaption>
+      </figure>
+      <figure>
+        <img src="https://evandy.studentroombook.com/storage/hostel/occSgqBctrjW84UPgnxozYTeEJ5xGQ7h14qpvcuH.jpg" alt="Exterior of a multi-storey hostel building">
+        <figcaption>Exterior of a private hostel-style residential block.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+ 
+<!-- FOOTER -->
+<footer>
+  &copy; 2026 Web GIS Lab Assignment &mdash; Built with HTML, CSS &amp; Leaflet
+</footer>
+ 
+<!-- Linked script: Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Initialize map
+  const map = L.map('map').setView([5.6520, -0.1830], 15);
+ 
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+ 
+  const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri'
+  });
+ 
+  document.getElementById('osm').addEventListener('change', () => {
+    map.removeLayer(satLayer);
+    osmLayer.addTo(map);
+  });
+  document.getElementById('sat').addEventListener('change', () => {
+    map.removeLayer(osmLayer);
+    satLayer.addTo(map);
+  });
+ 
+  // University of Ghana Halls & Hostels (approximate campus locations)
+  const hostels = [
+    { name: "Legon Hall", lat: 5.6499731, lng: -0.1884163, type: "Traditional Hall" },
+    { name: "Akuafo Hall", lat: 5.6502073, lng: -0.1856236, type: "Traditional Hall" },
+    { name: "Commonwealth Hall", lat: 5.6507301, lng: -0.1914849, type: "Traditional Hall" },
+    { name: "Volta Hall", lat: 5.6521, lng: -0.1900, type: "Traditional Hall" },
+    { name: "Mensah Sarbah Hall", lat: 5.6462719, lng: -0.1870436, type: "Traditional Hall" },
+    { name: "Hilla Limann Hall", lat: 5.6374708, lng: -0.1848951, type: "UGEL Hall" },
+    { name: "Alex Kwapong Hall", lat: 5.6371022, lng: -0.1855872, type: "UGEL Hall" },
+    { name: "Elizabeth Sey Hall", lat: 5.6358831, lng: -0.1875932, type: "UGEL Hall" },
+    { name: "Jean Nelson Hall", lat: 5.6354548, lng:-0.1883767, type: "UGEL Hall" },
+    { name: "Jubilee Hall", lat: 5.6402393, lng: -0.1858587, type: "Hall" },
+    { name: "Valco Trust Hostel", lat: 5.6447010, lng: -0.1868037, type: "Hostel" },
+    { name: "International Students' Hostel", lat: 5.6399775, lng: -0.1851889, type: "Hostel" },
+    { name: "Pentagon Hostel (African Union Hall)", lat: 5.6569905, lng: -0.1820722, type: "Hostel" },
+    { name: "Bani Hostel", lat: 5.6631340, lng: -0.1795347, type: "Hostel" },
+    { name: "TF Hostel", lat: 5.6662992, lng: -0.1821580, type: "Private Hostel" }
+  ];
+ 
+  const markersLayer = L.layerGroup(
+    hostels.map(h =>
+      L.marker([h.lat, h.lng]).bindPopup(`<strong>${h.name}</strong><br>${h.type}`)
+    )
+  ).addTo(map);
+ 
+  // University of Ghana, Legon campus boundary (approximate)
+  const regionLayer = L.polygon([
+    [5.6294218, -0.1936278],
+    [5.6359612, -0.1738782],
+    [5.6659543, -0.1751793],
+    [5.6597721, -0.1987229]
+  ], { color: '#2f6b3f', fillColor: '#4caf50', fillOpacity: 0.10 })
+    .addTo(map)
+    .bindPopup("University of Ghana, Legon Campus (approximate boundary)");
+ 
+  document.getElementById('layer-markers').addEventListener('change', (e) => {
+    e.target.checked ? map.addLayer(markersLayer) : map.removeLayer(markersLayer);
+  });
+  document.getElementById('layer-region').addEventListener('change', (e) => {
+    e.target.checked ? map.addLayer(regionLayer) : map.removeLayer(regionLayer);
+  });
+ 
+  L.control.scale({ imperial: false }).addTo(map);
+ 
+  // Dark theme toggle
+  const themeBtn = document.getElementById('themeToggle');
+  themeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-theme');
+  });
+</script>
+</body>
+</html>
+ 
